@@ -1,25 +1,53 @@
-import logo from './logo.svg';
-import './App.css';
+import { useEffect, useReducer } from "react";
+import Header from "./Header.js";
+import Main from "./Main.js";
+import Loader from "./Loader.js";
+import Error from "./Error.js";
+import StartScreen from "./StartScreen.js";
 
-function App() {
+export default function App() {
+  const initialState = {
+    question: [],
+    // loading , ready ,failed,
+    status: "loading",
+  };
+
+  function reducer(state, action) {
+    switch (action.type) {
+      case "dataReceived":
+        return { ...state, question: action.payload, status: "ready" };
+
+      case "dataFailed":
+        return {
+          ...state,
+          status: "failed",
+        };
+
+      default:
+        throw new Error("action unknown");
+    }
+  }
+
+  useEffect(function () {
+    fetch("http://localhost:8000/")
+      .then((res) => res.json())
+      .then((data) => dispatch({ type: "dataReceived", payload: data }))
+      .catch((error) => {
+        dispatch({ type: "dataFailed" });
+      });
+  }, []);
+
+  const [{ question, status }, dispatch] = useReducer(reducer, initialState);
+  const numQuestions = question.length;
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app">
+      <Header />
+      <Main>
+        {status === "loading" && <Loader />}
+        {status === "failed" && <Error />}
+        {status === "ready" && <StartScreen numQuestions={numQuestions} />}
+      </Main>
     </div>
   );
 }
-
-export default App;
